@@ -1,6 +1,5 @@
 #include <raylib.h>
 
-
 struct AnimData
 
 {
@@ -10,8 +9,6 @@ int frame;
 float updateTime;
 float runningTime;
 };
-
-
 bool isOnGround(AnimData data, int windowHeight)
 {
 
@@ -38,19 +35,15 @@ AnimData updateAnimData(AnimData data, float deltaTime, int maxFrame)
     return data;
 }
 
-
 int main()
 {
     //Using an Array for windowDimensions
     int windowDimensions[2];
     windowDimensions[0] = 512;
     windowDimensions[1] = 380;
-
-
     /* Window dimensions, const variables must be initialized immediately. 
     So we use curly brackets, or braced initialization. */
     InitWindow(windowDimensions[0], windowDimensions[1], "Dasher!");
-
     // acceleration due to gravity (pixels/s)/s
     const int gravity{1'000};
     //PPS
@@ -73,6 +66,7 @@ int main()
         nebulae[i].frame = 0;
         nebulae[i].updateTime = 1/12;
         nebulae[i].runningTime = 0.0;
+
     }
 
     nebulae[0].pos.x = windowDimensions[0];
@@ -82,11 +76,9 @@ int main()
     nebulae[4].pos.x = windowDimensions[0] + 1200;
     nebulae[5].pos.x = windowDimensions[0] + 1500;
 
-
+    float finishLine {nebulae[sizeOfNebulae - 1].pos.x};
     //Neb X velocity (PpS)
     int nebVel{-200};
-
-
     int velocity{0};
     bool isInAir{};
 
@@ -111,6 +103,8 @@ int main()
     Texture2D fg = LoadTexture("textures/foreground.png"); 
     float fgX{};
 
+    //Check for collision with char + nebula
+    bool collision{};
     SetTargetFPS(60);
     while (!WindowShouldClose())
     {
@@ -146,10 +140,12 @@ int main()
         Vector2 bg2Pos {bgX + bg.width*2, 0.0};
         DrawTextureEx(bg, bg2Pos, 0.0, 2.0, WHITE);
         //Draw midground
+
         Vector2 mg1Pos {mgX, 0.0};
         DrawTextureEx(mg, mg1Pos, 0.0, 2.0, WHITE);
         Vector2 mg2Pos {mgX + mg.width*2, 0.0};
         DrawTextureEx(mg, mg2Pos, 0.0, 2.0, WHITE);
+        
         //Draw foreground
         Vector2 fg1Pos {fgX, 0.0};
         DrawTextureEx(fg, fg1Pos, 0.0, 2.0, WHITE);
@@ -186,10 +182,9 @@ int main()
 
         // Update pos of second nebula hazard
         nebulae[1].pos.x += nebVel * dT;
-
+        finishLine += nebVel * dT;
         // Update position of character
         charData.pos.y += velocity * dT;
-
         //Update character anim frame
         if (!isInAir)
         {
@@ -202,21 +197,54 @@ int main()
         {
             nebulae[i] = updateAnimData(nebulae[i], dT, 7);
         }
+    for (AnimData nebula : nebulae)
+        {
+            float pad{50};
+            Rectangle nebRec{
+                nebula.pos.x + pad,
+                nebula.pos.y + pad,
+                nebula.rec.width - 2*pad,
+                nebula.rec.height - 2*pad
+            };
+            Rectangle charRec{
+                charData.pos.x,
+                charData.pos.y,
+                charData.rec.width,
+                charData.rec.height
+            };
+            if (CheckCollisionRecs(nebRec, charRec))
+            {
+                collision = true;
+            }
+            
+        }
+        if (collision)
+        {
+            // Lose the game
+            DrawText("Game Over!", windowDimensions[0]/4, windowDimensions[1]/2, 40, YELLOW);
+        }
+        else if (charData.pos.x >= finishLine)
+        {
+            //Win the game
+            DrawText("You Win!", windowDimensions[0]/4, windowDimensions[1]/2, 40, GREEN);
+        }
 
+        else
+        {
     for (int i = 0; i < sizeOfNebulae; i++)
-    {
+            {
 
-        //Draw danger nebula hazard
-        DrawTextureRec(nebula, nebulae[i].rec, nebulae[i].pos, WHITE);
+                //Draw danger nebula hazard
+                DrawTextureRec(nebula, nebulae[i].rec, nebulae[i].pos, WHITE);
 
-    }
+            }
 
-    //Draw character
-    DrawTextureRec(character, charData.rec, charData.pos, WHITE);
+        //Draw character
+        DrawTextureRec(character, charData.rec, charData.pos, WHITE);
 
+        }
     //Stop drawing
     EndDrawing();
-
     }
     //Unload texture
     UnloadTexture(character);
